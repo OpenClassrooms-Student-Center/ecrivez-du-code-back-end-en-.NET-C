@@ -1,0 +1,21 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject Texts Texts
+
+<header class="top-bar">
+    <h1>Hamac</h1>
+    <div class="language">
+        <button class="@(Texts.Language == "fr" ? "active" : "")" @onclick='() => Texts.SetLanguage("fr")'>FR</button>
+        <button class="@(Texts.Language == "en" ? "active" : "")" @onclick='() => Texts.SetLanguage("en")'>EN</button>
+    </div>
+</header>
+
+<main>
+    @Body
+</main>
+
+@code {
+    protected override void OnInitialized() => Texts.LanguageChanged += StateHasChanged;
+
+    public void Dispose() => Texts.LanguageChanged -= StateHasChanged;
+}

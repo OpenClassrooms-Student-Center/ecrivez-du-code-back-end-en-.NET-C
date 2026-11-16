@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Hamac.Api/Hamac.Api.csproj" />
+    <Project Path="src/Hamac.Front/Hamac.Front.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Hamac.Tests/Hamac.Tests.csproj" />
+  </Folder>
+</Solution>

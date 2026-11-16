@@ -1,0 +1,161 @@
+@page "/"
+@implements IDisposable
+@inject ILeaveApi LeaveApi
+@inject Texts Texts
+
+<PageTitle>Hamac</PageTitle>
+
+<h2>@Texts["Title"]</h2>
+
+@if (error is not null)
+{
+    <p class="error" role="alert">@error</p>
+}
+
+<section class="balance">
+    <label>
+        @Texts["Employee"]
+        <input type="number" min="1" @bind="employeeId" />
+    </label>
+    <button @onclick="LoadBalanceAsync">@Texts["ShowBalance"]</button>
+    @if (balance is not null)
+    {
+        <p>@Texts["Balance"] : <strong>@Texts.Number(balance.Value)</strong> @Texts["Days"]</p>
+    }
+</section>
+
+<section class="requests">
+    <label>
+        @Texts["Filter"]
+        <select value="@status" @onchange="OnStatusChangedAsync">
+            <option value="">@Texts["All"]</option>
+            <option value="Pending">@Texts.Status("Pending")</option>
+            <option value="Approved">@Texts.Status("Approved")</option>
+            <option value="Refused">@Texts.Status("Refused")</option>
+        </select>
+    </label>
+
+    @if (requests is null)
+    {
+        <p>@Texts["Loading"]</p>
+    }
+    else if (requests.Count == 0)
+    {
+        <p>@Texts["NoRequest"]</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>@Texts["Id"]</th>
+                    <th>@Texts["Employee"]</th>
+                    <th>@Texts["Start"]</th>
+                    <th>@Texts["End"]</th>
+                    <th>@Texts["DaysColumn"]</th>
+                    <th>@Texts["Status"]</th>
+                    <th>@Texts["Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var request in requests)
+                {
+                    <tr>
+                        <td>@request.Id</td>
+                        <td>@request.EmployeeId</td>
+                        <td>@Texts.Date(request.StartDate)</td>
+                        <td>@Texts.Date(request.EndDate)</td>
+                        <td>@request.Days</td>
+                        <td>@Texts.Status(request.Status)</td>
+                        <td>
+                            @if (request.Status == "Pending")
+                            {
+                                <button @onclick="() => ApproveAsync(request.Id)">@Texts["Approve"]</button>
+                                <button @onclick="() => RefuseAsync(request.Id)">@Texts["Refuse"]</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<section class="new-request">
+    <h3>@Texts["NewRequest"]</h3>
+    <EditForm Model="newRequest" OnSubmit="CreateAsync" FormName="new-request">
+        <label>
+            @Texts["Employee"]
+            <InputNumber @bind-Value="newRequest.EmployeeId" min="1" />
+        </label>
+        <label>
+            @Texts["Start"]
+            <InputDate @bind-Value="newRequest.StartDate" />
+        </label>
+        <label>
+            @Texts["End"]
+            <InputDate @bind-Value="newRequest.EndDate" />
+        </label>
+        <button type="submit">@Texts["Submit"]</button>
+    </EditForm>
+</section>
+
+@code {
+    private int employeeId = 1;
+    private double? balance;
+    private string status = "";
+    private IReadOnlyList<LeaveRequestViewModel>? requests;
+    private NewLeaveRequestViewModel newRequest = new() { EmployeeId = 1 };
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Texts.LanguageChanged += StateHasChanged;
+        await LoadRequestsAsync();
+    }
+
+    public void Dispose() => Texts.LanguageChanged -= StateHasChanged;
+
+    private Task LoadBalanceAsync() => RunAsync(async () => balance = await LeaveApi.GetBalanceAsync(employeeId));
+
+    private Task LoadRequestsAsync() =>
+        RunAsync(async () => requests = await LeaveApi.GetRequestsAsync(status == "" ? null : status));
+
+    private async Task OnStatusChangedAsync(ChangeEventArgs e)
+    {
+        status = e.Value?.ToString() ?? "";
+        await LoadRequestsAsync();
+    }
+
+    private Task ApproveAsync(int id) => RunAsync(async () =>
+    {
+        await LeaveApi.ApproveAsync(id);
+        requests = await LeaveApi.GetRequestsAsync(status == "" ? null : status);
+    });
+
+    private Task RefuseAsync(int id) => RunAsync(async () =>
+    {
+        await LeaveApi.RefuseAsync(id);
+        requests = await LeaveApi.GetRequestsAsync(status == "" ? null : status);
+    });
+
+    private Task CreateAsync() => RunAsync(async () =>
+    {
+        await LeaveApi.CreateRequestAsync(newRequest);
+        newRequest = new() { EmployeeId = newRequest.EmployeeId };
+        requests = await LeaveApi.GetRequestsAsync(status == "" ? null : status);
+    });
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        error = null;
+        try
+        {
+            await action();
+        }
+        catch (LeaveApiException ex)
+        {
+            error = ex.Message;
+        }
+    }
+}
