@@ -1,0 +1,14 @@
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p>@Texts["NotFound"]</p>
+        </LayoutView>
+    </NotFound>
+</Router>
+
+@code {
+    [Inject] private Texts Texts { get; set; } = default!;
+}

@@ -1,0 +1,16 @@
+@baseUrl = http://localhost:5110
+
+### Solde de Leïla Haddad
+GET {{baseUrl}}/api/employees/4/balance
+
+### Demandes en attente
+GET {{baseUrl}}/api/leave-requests?status=Pending
+
+### Approuver la demande n° 7
+POST {{baseUrl}}/api/leave-requests/7/approval
+
+### Déposer une demande invalide
+POST {{baseUrl}}/api/leave-requests
+Content-Type: application/json
+
+{ "employeeId": 4, "startDate": "2026-07-10", "endDate": "2026-07-06" }
